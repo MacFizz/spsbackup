@@ -8,6 +8,7 @@ It has:
   - spsbackup: main script
   - spsbackup.conf: default configuration file
   - spsbackup.list: list file containing the list of patterns to backup.
+
 Configuration can be overridden with CLI switches (./spsbackup --help)
 You can specify pre and post backup scripts if needed.
   - pre_backup.sh: script to be executed before backup (mounting remote drives, etc.)
