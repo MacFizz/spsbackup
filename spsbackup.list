@@ -1,0 +1,4 @@
+/var/modep/banks.json 
+/var/modep/pedalboards 
+/home/patch/pi-stomp/pistomp/*.yml 
+/home/patch/scripts

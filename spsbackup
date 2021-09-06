@@ -1,0 +1,294 @@
+#!/bin/bash
+#This script comes with no warranty .use at own risk
+# Copyright (C) 2021 Joanny Krafft
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program or from the site that you downloaded it
+# from; if not, write to the Free Software Foundation, Inc., 59 Temple
+# Place, Suite 330, Boston, MA 02111-1307 USA
+#
+# This script provides backup for the pi-stomp https://www.treefallsound.com/
+
+source spsbtools
+
+#Simple Pi-Stomp Backup (SPSBackup)
+app_name=spsbackup
+app_version=0.1
+app_author="Joanny Krafft"
+app_description="Simple Pi-Stomp Backup"
+
+default_config=/home/patch/scripts/spsbackup.conf
+
+check_args () {
+while [ "$1" != "" ]; do
+        case "$1" in
+		"--help")
+                        #Display help
+                        echo "Usage: $app_name [OPTION]"
+			echo "	-t --target BACKUP_LOCATION: specify a different location for the backup"
+			echo "	-l --list BACKUP_LIST: specify a different file containing the list of files for the backup"
+			echo "	-e --disable-pre : disable the pre-backup script, useful when doing other backup than the one configured in config file"
+			echo "	-o --disable-post : disable the post-backup script, useful when doing other backup than the one configured in config file"
+			echo "	-p --pre : specify a different pre-backup script"
+			echo "	-t --post : specify a different post-backup script"
+			echo "	-d --dry-run: do everything it does exept for the TAR command"
+			echo "	-c --config CONFIG_FILE: use an alternate config file"
+			echo "	-a --backup-name BACKUP_NAME: specify a backup name"
+			echo "	-r --restore : Restore files up to the last backup"
+			echo "	-i --restore-location RESTORE_LOCATION: restore files at a different location"
+			echo "	-n --new: start a new incremental backup series (-not implemeted yet)"
+			echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet"
+			exit 0
+                        ;;
+
+               "-t"|"--target")
+                       if [ "$2" != '' ]; then
+                               location=$2
+                               shift 2
+                       else
+                               echo "You must specify a location for your backup."
+                               exit 1
+                      fi
+                       ;;
+               "-l"|"--list")
+                       if [ "$2" != '' ]; then
+                               list=$2
+                               shift 2
+                       else
+                               echo "You must specify a file list for your backup."
+                               exit 1
+                      fi
+                       ;;
+               "-c"|"--config")
+                       if [ "$2" != '' ]; then
+                               config=$2
+                               shift 2
+                       else
+                               echo "You must specify a configuration file."
+                               exit 1
+                      fi
+                       ;;
+               "-a"|"--backup-name")
+                       if [ "$2" != '' ]; then
+                               name=$2
+                               shift 2
+                       else
+                               echo "You must specify a backup name."
+                               exit 1
+                      fi
+                       ;;
+               "-r"|"--pre")
+                       if [ "$2" != '' ]; then
+				pre=$2
+                               shift 2
+                       else
+                               echo "You must specify a file for your pre-backup script."
+                               exit 1
+                      fi
+			;;
+               "-t"|"--post")
+                       if [ "$2" != '' ]; then
+                              post=$2
+                              shift 2
+                       else
+                               echo "You must specify a file for your post-backup script."
+                               exit 1
+                      fi
+                       ;;
+               "-e"|"--disable-pre")
+                      	disable_pre=true
+			shift 1
+                       ;;
+               "-o"|"--disable-post")
+                      	disable_post=true
+			shift 1
+                       ;;
+               "-d"|"--dry-run")
+                      	dry=true
+			shift 1
+                       ;;
+               "-r"|"--restore")
+                      	restore=true
+			shift 1
+                       ;;
+               "-i"|"--restore-location")
+                       if [ "$2" != '' ]; then
+                              restore_loc=$2
+                              shift 2
+                       else
+                               echo "You must specify a location where to restore your files."
+                               exit 1
+                      fi
+                       ;;
+               "-n"|"--new")
+                      die "Start a new incremental backup series (-not implemeted yet)"
+                       ;;
+               *)
+                       #if unknown option -> exit
+                       echo $1 unknown option
+			echo "Try '$app_name --help' for more information."
+                       exit 1
+                       ;;
+       esac
+done
+}
+
+check_config() {
+	location=${location-$backup_location}
+	if [ -z $location ]; then
+		die "No location provided by config file or command line."
+	fi
+
+	if [ ! -d "$location" ]; then
+		die "Location $location does not exists."
+	fi
+
+	list=${list-$backup_list}
+	if [ -z $list ]; then
+		die "No list provided by config file or command line."
+	fi
+
+	if [ ! -f "$list" ]; then
+		die "List $list does not exists."
+	fi
+
+	pre=${pre-$pre_backup}
+	if [ -z $disable_pre ] && [ ! -z $pre ]; then
+		if [ ! -f "$pre" ]; then
+			die "Pre-backup $pre does not exists."
+		fi
+	fi
+	pre=${post-$post_backup}
+	if [ -z $disable_post ] && [ ! -z $post ]; then
+		if [ ! -f "$post" ]; then
+			die "Post-backup $post does not exists."
+		fi
+	fi
+	name=${name-$backup_name}
+}
+
+info() {
+	echo "The backup files are stored at $location"
+	echo "Using $config as configuration file"
+	echo "The backup name is $name"
+
+}
+
+do_backup() {
+	echo "Creating incremental backup $location$name-$backup_date.tgz"
+	if  [ -z $dry ]; then
+		sudo tar --verbose --create --absolute-names --gzip --listed-incremental=$location$name.sngz --file=$location$name-$backup_date.tgz $(cat $list)
+		status=$?
+		if [ $status -eq 0 ];
+		then
+			if [ -d $location$name-$backup_date.tgz ]; then
+				echo "Backup $location$name-$backup_date.tgz successfully created"
+			fi
+		else
+			die "Something went wrong during the backup process"
+		fi
+	else
+		echo "Dry run - not actually doing anything here..."
+		status=0
+	fi
+}
+
+do_restore() {
+	echo "The backup will be restored at $restore_location"
+
+	if [ -z $dry ];	then
+	        restore_location=$default_restore
+
+		for file in $(ls -1 $backup_location$name-*.tgz); do
+			echo Extracting file $file---------------------
+			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory /media/backup/ --file=$file
+		done
+	else
+		echo "Dry run: those files should be processed:"
+		echo $(ls -1 $location$name-*.tgz)
+	fi
+}
+
+list_patterns() {
+	echo "Content of backup list $list :"
+	for pattern in  $(cat $list); do
+		echo "	$pattern"
+	done
+}
+
+list_backup() {
+	echo "List backup located at $location"
+	#tar --list --incremental --verbose --file $location$name-$backup_date.tgz #Not actually useful here
+	ls -lh $location$name*.tgz
+}
+
+debug() {
+	echo "Variables from config file:"
+	echo "	backup_location: $backup_location"
+	echo "	backup_name: $backup_name"
+	echo "	backup_date: $backup_date"
+	echo "	backup_list: $backup_list"
+	echo "	default_restore: $default_restore"
+	echo "	pre_backup: $pre_backup"
+	echo "	post_backup: $post_backup"
+	echo "Other variables:"
+	echo "	location: $location"
+	echo "	list: $list"
+	echo "	pre: $pre"
+	echo "	post: $post"
+	echo "	disable_pre: $disable_pre"
+	echo "	disable_post: $disable_post"
+	echo "	name: $name"
+}
+
+check_dependencies() {
+	echo -n "Checking dependencies... "
+	for dep_name in tar gzip
+	do
+	  [[ $(which $dep_name 2>/dev/null) ]] || { echo -en "\n$name needs to be installed. Use 'sudo apt-get install $name'";deps=1; }
+	done
+	[[ $deps -ne 1 ]] && echo "OK" || { echo -en "\nInstall the above and rerun this script\n";exit 1; }
+}
+
+pre() {
+	if [ -z disable_pre ]; then
+		$pre
+	fi
+}
+
+post() {
+	if [ -z disable_post ]; then
+		$post
+	fi
+}
+
+
+echo "$app_name $app_version - $app_description by $app_author"
+
+check_dependencies
+check_args $*
+config=${config-$default_config}
+source $config
+check_config
+debug
+info
+if [ -z $restore ]; then
+	pre
+	list_patterns
+	do_backup
+	list_backup
+	post
+else
+	do_restore
+fi
+
+#done ?!
