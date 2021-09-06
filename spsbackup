@@ -39,7 +39,7 @@ while [ "$1" != "" ]; do
 			echo "	-e --disable-pre : disable the pre-backup script, useful when doing other backup than the one configured in config file"
 			echo "	-o --disable-post : disable the post-backup script, useful when doing other backup than the one configured in config file"
 			echo "	-p --pre : specify a different pre-backup script"
-			echo "	-t --post : specify a different post-backup script"
+			echo "	-q --post : specify a different post-backup script"
 			echo "	-d --dry-run: do everything it does exept for the TAR command"
 			echo "	-c --config CONFIG_FILE: use an alternate config file"
 			echo "	-a --backup-name BACKUP_NAME: specify a backup name"
@@ -86,7 +86,7 @@ while [ "$1" != "" ]; do
                                exit 1
                       fi
                        ;;
-               "-r"|"--pre")
+               "-p"|"--pre")
                        if [ "$2" != '' ]; then
 				pre=$2
                                shift 2
@@ -95,7 +95,7 @@ while [ "$1" != "" ]; do
                                exit 1
                       fi
 			;;
-               "-t"|"--post")
+               "-q"|"--post")
                        if [ "$2" != '' ]; then
                               post=$2
                               shift 2
@@ -122,7 +122,7 @@ while [ "$1" != "" ]; do
                        ;;
                "-i"|"--restore-location")
                        if [ "$2" != '' ]; then
-                              restore_loc=$2
+                              restore_location=$2
                               shift 2
                        else
                                echo "You must specify a location where to restore your files."
@@ -174,6 +174,10 @@ check_config() {
 		fi
 	fi
 	name=${name-$backup_name}
+	restore_location=${restore_location-$default_restore}
+	if [ ! -d "$restore_location" ]; then
+		die "Restore location $restore_location does not exists."
+	fi
 }
 
 info() {
@@ -206,15 +210,15 @@ do_restore() {
 	echo "The backup will be restored at $restore_location"
 
 	if [ -z $dry ];	then
-	        restore_location=$default_restore
-
-		for file in $(ls -1 $backup_location$name-*.tgz); do
+		for file in $(ls -1 $location$name-*.tgz); do
 			echo Extracting file $file---------------------
-			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory /media/backup/ --file=$file
+			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
 		done
 	else
 		echo "Dry run: those files should be processed:"
-		echo $(ls -1 $location$name-*.tgz)
+		for file in $(ls -1 $location$name-*.tgz); do
+			echo "	$file"
+		done
 	fi
 }
 
