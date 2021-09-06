@@ -15,3 +15,4 @@ You can specify pre and post backup scripts if needed.
   - post_backup.sh: script to be executed after backup (unmount remote drivesn etc.)
 
 It is still on its early stage but basic operations are all working.
+Being incremental, the first backup can take serveral seconds, following are much faster.
