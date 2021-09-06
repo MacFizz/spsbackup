@@ -45,6 +45,7 @@ while [ "$1" != "" ]; do
 			echo "	-a --backup-name BACKUP_NAME: specify a backup name"
 			echo "	-r --restore : Restore files up to the last backup"
 			echo "	-i --restore-location RESTORE_LOCATION: restore files at a different location"
+			echo "	--summary:list backup files"
 			echo "	-n --new: start a new incremental backup series (-not implemeted yet)"
 			echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet"
 			exit 0
@@ -118,6 +119,10 @@ while [ "$1" != "" ]; do
                        ;;
                "-r"|"--restore")
                       	restore=true
+			shift 1
+                       ;;
+               "--summary")
+                      	summary=true
 			shift 1
                        ;;
                "-i"|"--restore-location")
@@ -212,7 +217,7 @@ do_restore() {
 	if [ -z $dry ];	then
 		for file in $(ls -1 $location$name-*.tgz); do
 			echo Extracting file $file---------------------
-			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
+			tar --extract --absolute-names --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
 		done
 	else
 		echo "Dry run: those files should be processed:"
@@ -285,6 +290,10 @@ source $config
 check_config
 #debug
 info
+if [ ! -z $summary ]; then
+	list_backup
+	exit 0
+fi
 if [ -z $restore ]; then
 	pre
 	list_patterns
