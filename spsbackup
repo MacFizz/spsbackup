@@ -279,7 +279,7 @@ check_args $*
 config=${config-$default_config}
 source $config
 check_config
-debug
+#debug
 info
 if [ -z $restore ]; then
 	pre
