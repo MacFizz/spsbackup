@@ -34,12 +34,12 @@ while [ "$1" != "" ]; do
 		"--help")
                         #Display help
                         echo "Usage: $app_name [OPTION]"
-			echo "	-t --target BACKUP_LOCATION: specify a different location for the backup"
-			echo "	-l --list BACKUP_LIST: specify a different file containing the list of files for the backup"
-			echo "	-e --disable-pre : disable the pre-backup script, useful when doing other backup than the one configured in config file"
-			echo "	-o --disable-post : disable the post-backup script, useful when doing other backup than the one configured in config file"
-			echo "	-p --pre : specify a different pre-backup script"
-			echo "	-q --post : specify a different post-backup script"
+			echo "	-t --location BACKUP_LOCATION: specify location for the backup"
+			echo "	-l --list BACKUP_LIST: specify a file containing the list of files for the backup"
+			echo "	-e --disable-pre : disable the pre-backup/restore script, useful when doing other backup than the one configured in config file"
+			echo "	-o --disable-post : disable the post-backup/restore script, useful when doing other backup than the one configured in config file"
+			echo "	-p --pre : specify a different pre-backup/restore script"
+			echo "	-q --post : specify a different post-backup/restore script"
 			echo "	-d --dry-run: do everything it does exept for the TAR command"
 			echo "	-c --config CONFIG_FILE: use an alternate config file"
 			echo "	-a --backup-name BACKUP_NAME: specify a backup name"
@@ -51,7 +51,7 @@ while [ "$1" != "" ]; do
 			exit 0
                         ;;
 
-               "-t"|"--target")
+               "-t"|"--location")
                        if [ "$2" != '' ]; then
                                location=$2
                                shift 2
@@ -166,21 +166,33 @@ check_config() {
 		die "List $list does not exists."
 	fi
 
-	pre=${pre-$pre_backup}
+	if [ -z $restore ]; then
+		pre=${pre-$pre_backup}
+	else
+		pre=${pre-$pre_restore}
+	fi
+
 	if [ -z $disable_pre ] && [ ! -z $pre ]; then
 		if [ ! -f "$pre" ]; then
 			die "Pre-backup $pre does not exists."
 		fi
 	fi
-	pre=${post-$post_backup}
+
+	if [ -z $restore ]; then
+		pre=${post-$post_backup}
+	else
+		pre=${post-$post_restore}
+	fi
+
 	if [ -z $disable_post ] && [ ! -z $post ]; then
 		if [ ! -f "$post" ]; then
 			die "Post-backup $post does not exists."
 		fi
 	fi
+
 	name=${name-$backup_name}
 	restore_location=${restore_location-$default_restore}
-	if [ ! -d "$restore_location" ]; then
+	if [ ! -d "$restore_location" ] && [ ! -z $restore ]; then
 		die "Restore location $restore_location does not exists."
 	fi
 }
@@ -286,7 +298,11 @@ echo "$app_name $app_version - $app_description by $app_author"
 check_dependencies
 check_args $*
 config=${config-$default_config}
-source $config
+if [ ! -e $config ]; then
+	echo "Configuration file $config does not exists - hope you've set everything through command line..."
+else
+	source $config
+fi
 check_config
 #debug
 info
@@ -294,14 +310,13 @@ if [ ! -z $summary ]; then
 	list_backup
 	exit 0
 fi
+pre
 if [ -z $restore ]; then
-	pre
 	list_patterns
 	do_backup
 	list_backup
-	post
 else
 	do_restore
 fi
-
+post
 #done ?!
