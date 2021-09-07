@@ -217,7 +217,7 @@ do_restore() {
 	if [ -z $dry ];	then
 		for file in $(ls -1 $location$name-*.tgz); do
 			echo Extracting file $file---------------------
-			tar --extract --absolute-names --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
+			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
 		done
 	else
 		echo "Dry run: those files should be processed:"
