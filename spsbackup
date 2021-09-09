@@ -24,7 +24,7 @@ app_version=0.1
 app_author="Joanny Krafft"
 app_description="Simple Pi-Stomp Backup"
 
-default_config=/home/patch/spsbackup/spsbackup.conf
+default_config=/etc/spsbackup.conf
 default_tmp=/tmp
 
 yell() { echo "$0: $*" >&2; }
