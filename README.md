@@ -27,4 +27,4 @@ Being incremental, the first backup can take serveral seconds, following are muc
 ## Installation
 Just run ./setup.sh
 
-or you can manually create the folder where your backups are going to be stored and fill up the spsbackup.conf to you need using spsbackup.conf and spsbackup.list example files provided.
+or you can manually create the folder where your backups are going to be stored and fill up the spsbackup.conf to your needs using spsbackup.conf and spsbackup.list example files provided.
