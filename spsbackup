@@ -18,8 +18,6 @@
 #
 # This script provides backup for the pi-stomp https://www.treefallsound.com/
 
-source spsbtools
-
 #Simple Pi-Stomp Backup (SPSBackup)
 app_name=spsbackup
 app_version=0.1
@@ -27,6 +25,11 @@ app_author="Joanny Krafft"
 app_description="Simple Pi-Stomp Backup"
 
 default_config=/home/patch/spsbackup/spsbackup.conf
+default_tmp=/tmp
+
+yell() { echo "$0: $*" >&2; }
+die() { yell "$*"; exit 111; }
+try() { "$@" || die "cannot $*"; }
 
 check_args () {
 while [ "$1" != "" ]; do
@@ -47,7 +50,9 @@ while [ "$1" != "" ]; do
 			echo "	-i --restore-location RESTORE_LOCATION: restore files at a different location"
 			echo "	--summary:list backup files"
 			echo "	-n --new: start a new incremental backup series (-not implemeted yet)"
-			echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet"
+			echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet)"
+			echo " "
+			echo "Default action is backup, you can also use --summary,  --restore or --solidify"
 			exit 0
                         ;;
 
@@ -118,11 +123,15 @@ while [ "$1" != "" ]; do
 			shift 1
                        ;;
                "-r"|"--restore")
-                      	restore=true
+                      	action="restore"
+			shift 1
+                       ;;
+               "-s"|"--solidify")
+                      	action="solidify"
 			shift 1
                        ;;
                "--summary")
-                      	summary=true
+                      	action="summary"
 			shift 1
                        ;;
                "-i"|"--restore-location")
@@ -135,7 +144,7 @@ while [ "$1" != "" ]; do
                       fi
                        ;;
                "-n"|"--new")
-                      die "Start a new incremental backup series (-not implemeted yet)"
+#			die "Start a new incremental backup series (-not implemeted yet)"
                        ;;
                *)
                        #if unknown option -> exit
@@ -149,12 +158,13 @@ done
 
 check_config() {
 	location=${location-$backup_location}
+	action=${action-"backup"}
 	if [ -z $location ]; then
 		die "No location provided by config file or command line."
 	fi
 
 	if [ ! -d "$location" ]; then
-		die "Location $location does not exists."
+		die "Backup location $location does not exists."
 	fi
 
 	list=${list-$backup_list}
@@ -166,22 +176,31 @@ check_config() {
 		die "List $list does not exists."
 	fi
 
-	if [ -z $restore ]; then
-		pre=${pre-$pre_backup}
-	else
-		pre=${pre-$pre_restore}
-	fi
+
+	case $action in 
+		"backup")
+			pre=${pre-$pre_backup}
+			pre=${post-$post_backup}
+			;;
+		"restore")
+			pre=${pre-$pre_restore}
+			pre=${post-$post_restore}
+			;;
+		"summary")
+			echo  "No config check for listing..."
+			;;
+		"solidify")
+			echo  "No config check for solidify..."
+			;;
+		*)
+			die "Unrecognized action $action"
+			;;
+	esac
 
 	if [ -z $disable_pre ] && [ ! -z $pre ]; then
 		if [ ! -f "$pre" ]; then
 			die "Pre-backup $pre does not exists."
 		fi
-	fi
-
-	if [ -z $restore ]; then
-		pre=${post-$post_backup}
-	else
-		pre=${post-$post_restore}
 	fi
 
 	if [ -z $disable_post ] && [ ! -z $post ]; then
@@ -207,7 +226,7 @@ info() {
 do_backup() {
 	echo "Creating incremental backup $location$name-$backup_date.tgz"
 	if  [ -z $dry ]; then
-		sudo tar --verbose --create --absolute-names --gzip --listed-incremental=$location$name.sngz --file=$location$name-$backup_date.tgz $(cat $list)
+		tar --verbose --create --absolute-names --gzip --listed-incremental=$location$name.sngz --file=$location$name-$backup_date.tgz $(cat $list)
 		status=$?
 		if [ $status -eq 0 ];
 		then
@@ -227,17 +246,53 @@ do_restore() {
 	echo "The backup will be restored at $restore_location"
 
 	if [ -z $dry ];	then
-		for file in $(ls -1 $location$name-*.tgz); do
+		for file in $(ls -1 $location$name-*.tgz|grep -v "$name-Full"); do
 			echo Extracting file $file---------------------
 			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
 		done
+	else
+		echo "Dry run: those files should be processed:"
+		for file in $(ls -1 $location$name-*.tgz|grep -v "$name-Full"); do
+			echo "	$file"
+		done
+	fi
+}
+
+solidify() {
+	echo "Solidifying..."
+	mkdir $default_tmp/$app_name
+	mkdir $default_tmp/$app_name/$name
+	if [ !-d $default_tmp/$app_name/$name ]; then
+		die "Temp folder does not exist..."
+	fi
+	if [ -z $dry ];	then
+		for file in $(ls -1 $location$name-*.tgz); do
+			echo Extracting file $file---------------------
+			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $default_tmp/$app_name/$name/ --file=$file
+		done
+		echo "Creating new file $location$name-Full-$backup_date.tgz"
+		tar --verbose --create --directory $default_tmp/$app_name/$name . --gzip --file=$location$name-Full-$backup_date.tgz
+		status=$?
+		if [ $status -gt 0 ] ;
+		then
+			die "Something went wrong during the backup process"
+		else
+			if [ -f $location$name-Full-$backup_date.tgz ]; then
+				echo "Backup $location$name-Full-$backup_date.tgz successfully created"
+			else
+				die "Something went wrong during backup $location$name-Full-$backup_date.tgz" 
+			fi
+		fi
 	else
 		echo "Dry run: those files should be processed:"
 		for file in $(ls -1 $location$name-*.tgz); do
 			echo "	$file"
 		done
 	fi
+		echo "Cleaning temp folder $default_tmp..."
+		rm -r $default_tmp/$app_name
 }
+
 
 list_patterns() {
 	echo "Content of backup list $list :"
@@ -306,17 +361,26 @@ fi
 check_config
 #debug
 info
-if [ ! -z $summary ]; then
-	list_backup
-	exit 0
-fi
-pre
-if [ -z $restore ]; then
-	list_patterns
-	do_backup
-	list_backup
-else
-	do_restore
-fi
-post
+
+case $action in 
+	"summary")
+		list_backup
+		exit 0
+		;;
+	"backup")
+		pre
+		list_patterns
+		do_backup
+		list_backup
+		post
+		;;
+	"restore")
+		pre
+		do_restore
+		post
+		;;
+	"solidify")
+		solidify
+		;;
+esac
 #done ?!

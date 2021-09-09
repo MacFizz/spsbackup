@@ -2,3 +2,6 @@
 /var/modep/pedalboards 
 /home/patch/pi-stomp/pistomp/*.yml 
 /home/patch/spsbackup
+/etc/*.cred
+/etc/fstab
+/home/patch/.bashrc
