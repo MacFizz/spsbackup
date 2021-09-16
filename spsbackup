@@ -48,9 +48,11 @@ while [ "$1" != "" ]; do
 			echo "	-a --backup-name BACKUP_NAME: specify a backup name"
 			echo "	-r --restore : Restore files up to the last backup"
 			echo "	-i --restore-location RESTORE_LOCATION: restore files at a different location"
+			echo "	-v --date DATE : Restore files up to the specified date included. Format for date is YYYYMMDD or YYYYMMDD_HHMMSS"
 			echo "	--summary:list backup files"
 			echo "	-n --new: start a new incremental backup series (-not implemeted yet)"
 			echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet)"
+			echo "	--verbose: added verbosity"
 			echo " "
 			echo "Default action is backup, you can also use --summary,  --restore or --solidify"
 			exit 0
@@ -126,12 +128,34 @@ while [ "$1" != "" ]; do
                       	action="restore"
 			shift 1
                        ;;
+               "-v"|"--date")
+                       if [ "$2" != '' ]; then
+				case ${#2} in
+					8|15)
+						date=$2
+						;;
+					*)
+						echo "Format $2 isn't good for me. Format is YYYYMMDD or YYYYMMDD_HHMMSS."
+						exit 1
+						;;
+				esac
+				echo "Date: $date"
+                              shift 2
+                       else
+                               echo "You must specify a date for your backup to restore. Format is YYYYMMDD or YYYYMMDD_HHMMSS."
+                               exit 1
+                      fi
+                       ;;
                "-s"|"--solidify")
                       	action="solidify"
 			shift 1
                        ;;
                "--summary")
                       	action="summary"
+			shift 1
+                       ;;
+               "--verbose")
+                      	verbose=true
 			shift 1
                        ;;
                "-i"|"--restore-location")
@@ -225,37 +249,55 @@ info() {
 
 do_backup() {
 	echo "Creating incremental backup $location$name-$backup_date.tgz"
-	if  [ -z $dry ]; then
-		tar --verbose --create --absolute-names --gzip --listed-incremental=$location$name.sngz --file=$location$name-$backup_date.tgz $(cat $list)
-		status=$?
-		if [ $status -eq 0 ];
-		then
-			if [ -d $location$name-$backup_date.tgz ]; then
-				echo "Backup $location$name-$backup_date.tgz successfully created"
-			fi
-		else
-			die "Something went wrong during the backup process"
+	finalocinc=$location$name.sngz
+	finaloczip=$location$name-$backup_date.tgz
+	if  [[ "$dry" = "true" ]]; then
+	        finaloczip=/dev/null
+		if [ -f $location$name.sngz ]; then
+			cp $location$name.sngz $location$name.sngz.dry
+		fi
+		finalocinc=$location$name.sngz.dry
+		yell "Dry run - not actually doing anything here..."
+	fi
+	tar --verbose --create --absolute-names --gzip --ignore-command-error --listed-incremental=$finalocinc --file=$finaloczip $(cat $list)
+	status=$?
+	if [[ $status -eq 0 || "$dry" = "true" ]]; then
+		if [[ -d $location$name-$backup_date.tgz || "$dry" = "true" ]]; then
+			echo "Backup $location$name-$backup_date.tgz successfully created"
 		fi
 	else
-		echo "Dry run - not actually doing anything here..."
-		status=0
+		die "Something went wrong during the backup process"
+	fi
+	if  [[ "$dry" = "true" ]]; then
+		rm $location$name.sngz.dry
 	fi
 }
 
 do_restore() {
 	echo "The backup will be restored at $restore_location"
-
-	if [ -z $dry ];	then
-		for file in $(ls -1 $location$name-*.tgz|grep -v "$name-Full"); do
-			echo Extracting file $file---------------------
-			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $restore_location --file=$file
-		done
+	locname=$location$name
+	locnamepos=$((${#locname}+2))
+	datelen=${#date}
+	if  [[ "$dry" = "true" ]]; then
+		extract="--to-command /dev/null"
+		yell "Dry run: not extractiong anything"
 	else
-		echo "Dry run: those files should be processed:"
-		for file in $(ls -1 $location$name-*.tgz|grep -v "$name-Full"); do
-			echo "	$file"
-		done
+		extract="--directory $restore_location"
 	fi
+	for file in $(ls -1 $locname-*.tgz|grep -v "$name-Full"); do
+		archdate=$(expr substr $file $locnamepos $datelen)
+		if [[ $date > $archdate ]]; then
+			echo "Extracting file $file---------------------"
+			if [ -z $verbose ]; then
+	       			tar --extract --gzip --verbose --listed-incremental=/dev/null $extract --file=$file --ignore-command-error 2>/dev/null
+			else
+	       			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null $extract --file=$file --ignore-command-error
+		        fi
+		else
+			echo "File $file exluded from processing"
+		fi
+	done
+
 }
 
 solidify() {
@@ -265,7 +307,7 @@ solidify() {
 	if [ !-d $default_tmp/$app_name/$name ]; then
 		die "Temp folder does not exist..."
 	fi
-	if [ -z $dry ];	then
+	if  [[ "$dry" != "true" ]]; then
 		for file in $(ls -1 $location$name-*.tgz); do
 			echo Extracting file $file---------------------
 			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $default_tmp/$app_name/$name/ --file=$file
@@ -284,7 +326,7 @@ solidify() {
 			fi
 		fi
 	else
-		echo "Dry run: those files should be processed:"
+		yell "Dry run: those files should be processed:"
 		for file in $(ls -1 $location$name-*.tgz); do
 			echo "	$file"
 		done
@@ -360,7 +402,9 @@ else
 fi
 check_config
 #debug
-info
+if [[ "$verbose" == "true" ]]; then
+	info
+fi
 
 case $action in 
 	"summary")

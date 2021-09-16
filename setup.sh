@@ -28,7 +28,7 @@ fi
 backup_location=$HOME/backup
 echo "Creating backup location in $backup_location"
 if [ ! -d $backup_location ]; then 
-	sudo mkdir backup_location
+	sudo mkdir $backup_location
 	echo "...Done!"
 else
 	echo "$backup_location already exists!"
