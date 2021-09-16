@@ -32,361 +32,361 @@ die() { yell "$*"; exit 111; }
 try() { "$@" || die "cannot $*"; }
 
 check_args () {
-while [ "$1" != "" ]; do
-        case "$1" in
-		"--help")
-                        #Display help
-                        echo "Usage: $app_name [OPTION]"
-			echo "	-t --location BACKUP_LOCATION: specify location for the backup"
-			echo "	-l --list BACKUP_LIST: specify a file containing the list of files for the backup"
-			echo "	-e --disable-pre : disable the pre-backup/restore script, useful when doing other backup than the one configured in config file"
-			echo "	-o --disable-post : disable the post-backup/restore script, useful when doing other backup than the one configured in config file"
-			echo "	-p --pre : specify a different pre-backup/restore script"
-			echo "	-q --post : specify a different post-backup/restore script"
-			echo "	-d --dry-run: do everything it does exept for the TAR command"
-			echo "	-c --config CONFIG_FILE: use an alternate config file"
-			echo "	-a --backup-name BACKUP_NAME: specify a backup name"
-			echo "	-r --restore : Restore files up to the last backup"
-			echo "	-i --restore-location RESTORE_LOCATION: restore files at a different location"
-			echo "	-v --date DATE : Restore files up to the specified date included. Format for date is YYYYMMDD or YYYYMMDD_HHMMSS"
-			echo "	--summary:list backup files"
-			echo "	-n --new: start a new incremental backup series (-not implemeted yet)"
-			echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet)"
-			echo "	--verbose: added verbosity"
-			echo " "
-			echo "Default action is backup, you can also use --summary,  --restore or --solidify"
-			exit 0
-                        ;;
-
-               "-t"|"--location")
-                       if [ "$2" != '' ]; then
-                               location=$2
-                               shift 2
-                       else
-                               echo "You must specify a location for your backup."
-                               exit 1
-                      fi
-                       ;;
-               "-l"|"--list")
-                       if [ "$2" != '' ]; then
-                               list=$2
-                               shift 2
-                       else
-                               echo "You must specify a file list for your backup."
-                               exit 1
-                      fi
-                       ;;
-               "-c"|"--config")
-                       if [ "$2" != '' ]; then
-                               config=$2
-                               shift 2
-                       else
-                               echo "You must specify a configuration file."
-                               exit 1
-                      fi
-                       ;;
-               "-a"|"--backup-name")
-                       if [ "$2" != '' ]; then
-                               name=$2
-                               shift 2
-                       else
-                               echo "You must specify a backup name."
-                               exit 1
-                      fi
-                       ;;
-               "-p"|"--pre")
-                       if [ "$2" != '' ]; then
-				pre=$2
-                               shift 2
-                       else
-                               echo "You must specify a file for your pre-backup script."
-                               exit 1
-                      fi
-			;;
-               "-q"|"--post")
-                       if [ "$2" != '' ]; then
-                              post=$2
-                              shift 2
-                       else
-                               echo "You must specify a file for your post-backup script."
-                               exit 1
-                      fi
-                       ;;
-               "-e"|"--disable-pre")
-                      	disable_pre=true
-			shift 1
-                       ;;
-               "-o"|"--disable-post")
-                      	disable_post=true
-			shift 1
-                       ;;
-               "-d"|"--dry-run")
-                      	dry=true
-			shift 1
-                       ;;
-               "-r"|"--restore")
-                      	action="restore"
-			shift 1
-                       ;;
-               "-v"|"--date")
-                       if [ "$2" != '' ]; then
-				case ${#2} in
-					8|15)
-						date=$2
-						;;
-					*)
-						echo "Format $2 isn't good for me. Format is YYYYMMDD or YYYYMMDD_HHMMSS."
-						exit 1
-						;;
-				esac
-				echo "Date: $date"
-                              shift 2
-                       else
-                               echo "You must specify a date for your backup to restore. Format is YYYYMMDD or YYYYMMDD_HHMMSS."
-                               exit 1
-                      fi
-                       ;;
-               "-s"|"--solidify")
-                      	action="solidify"
-			shift 1
-                       ;;
-               "--summary")
-                      	action="summary"
-			shift 1
-                       ;;
-               "--verbose")
-                      	verbose=true
-			shift 1
-                       ;;
-               "-i"|"--restore-location")
-                       if [ "$2" != '' ]; then
-                              restore_location=$2
-                              shift 2
-                       else
-                               echo "You must specify a location where to restore your files."
-                               exit 1
-                      fi
-                       ;;
-               "-n"|"--new")
-#			die "Start a new incremental backup series (-not implemeted yet)"
-                       ;;
-               *)
-                       #if unknown option -> exit
-                       echo $1 unknown option
-			echo "Try '$app_name --help' for more information."
-                       exit 1
-                       ;;
-       esac
-done
+  while [ "$1" != "" ]; do
+    case "$1" in
+      "--help")
+        #Display help
+        echo "Usage: $app_name [OPTION]"
+        echo "	-t --location BACKUP_LOCATION: specify location for the backup"
+        echo "	-l --list BACKUP_LIST: specify a file containing the list of files for the backup"
+        echo "	-e --disable-pre : disable the pre-backup/restore script, useful when doing other backup than the one configured in config file"
+        echo "	-o --disable-post : disable the post-backup/restore script, useful when doing other backup than the one configured in config file"
+        echo "	-p --pre : specify a different pre-backup/restore script"
+        echo "	-q --post : specify a different post-backup/restore script"
+        echo "	-d --dry-run: do everything it does exept for the TAR command"
+        echo "	-c --config CONFIG_FILE: use an alternate config file"
+        echo "	-a --backup-name BACKUP_NAME: specify a backup name"
+        echo "	-r --restore : Restore files up to the last backup"
+        echo "	-i --restore-location RESTORE_LOCATION: restore files at a different location"
+        echo "	-v --date DATE : Restore files up to the specified date included. Format for date is YYYYMMDD or YYYYMMDD_HHMMSS"
+        echo "	--summary:list backup files"
+        echo "	-n --new: start a new incremental backup series (-not implemeted yet)"
+        echo "	-s --solidify: put all of the incremental backups into a new (-not implemented yet)"
+        echo "	--verbose: added verbosity"
+        echo " "
+        echo "Default action is backup, you can also use --summary,  --restore or --solidify"
+        exit 0
+      ;;
+      
+      "-t"|"--location")
+        if [ "$2" != '' ]; then
+          location=$2
+          shift 2
+        else
+          echo "You must specify a location for your backup."
+          exit 1
+        fi
+      ;;
+      "-l"|"--list")
+        if [ "$2" != '' ]; then
+          list=$2
+          shift 2
+        else
+          echo "You must specify a file list for your backup."
+          exit 1
+        fi
+      ;;
+      "-c"|"--config")
+        if [ "$2" != '' ]; then
+          config=$2
+          shift 2
+        else
+          echo "You must specify a configuration file."
+          exit 1
+        fi
+      ;;
+      "-a"|"--backup-name")
+        if [ "$2" != '' ]; then
+          name=$2
+          shift 2
+        else
+          echo "You must specify a backup name."
+          exit 1
+        fi
+      ;;
+      "-p"|"--pre")
+        if [ "$2" != '' ]; then
+          pre=$2
+          shift 2
+        else
+          echo "You must specify a file for your pre-backup script."
+          exit 1
+        fi
+      ;;
+      "-q"|"--post")
+        if [ "$2" != '' ]; then
+          post=$2
+          shift 2
+        else
+          echo "You must specify a file for your post-backup script."
+          exit 1
+        fi
+      ;;
+      "-e"|"--disable-pre")
+        disable_pre=true
+        shift 1
+      ;;
+      "-o"|"--disable-post")
+        disable_post=true
+        shift 1
+      ;;
+      "-d"|"--dry-run")
+        dry=true
+        shift 1
+      ;;
+      "-r"|"--restore")
+        action="restore"
+        shift 1
+      ;;
+      "-v"|"--date")
+        if [ "$2" != '' ]; then
+          case ${#2} in
+            8|15)
+              date=$2
+            ;;
+            *)
+              echo "Format $2 isn't good for me. Format is YYYYMMDD or YYYYMMDD_HHMMSS."
+              exit 1
+            ;;
+          esac
+          echo "Date: $date"
+          shift 2
+        else
+          echo "You must specify a date for your backup to restore. Format is YYYYMMDD or YYYYMMDD_HHMMSS."
+          exit 1
+        fi
+      ;;
+      "-s"|"--solidify")
+        action="solidify"
+        shift 1
+      ;;
+      "--summary")
+        action="summary"
+        shift 1
+      ;;
+      "--verbose")
+        verbose=true
+        shift 1
+      ;;
+      "-i"|"--restore-location")
+        if [ "$2" != '' ]; then
+          restore_location=$2
+          shift 2
+        else
+          echo "You must specify a location where to restore your files."
+          exit 1
+        fi
+      ;;
+      "-n"|"--new")
+        #			die "Start a new incremental backup series (-not implemeted yet)"
+      ;;
+      *)
+        #if unknown option -> exit
+        echo $1 unknown option
+        echo "Try '$app_name --help' for more information."
+        exit 1
+      ;;
+    esac
+  done
 }
 
 check_config() {
-	location=${location-$backup_location}
-	action=${action-"backup"}
-	if [ -z $location ]; then
-		die "No location provided by config file or command line."
-	fi
-
-	if [ ! -d "$location" ]; then
-		die "Backup location $location does not exists."
-	fi
-
-	list=${list-$backup_list}
-	if [ -z $list ]; then
-		die "No list provided by config file or command line."
-	fi
-
-	if [ ! -f "$list" ]; then
-		die "List $list does not exists."
-	fi
-
-
-	case $action in 
-		"backup")
-			pre=${pre-$pre_backup}
-			pre=${post-$post_backup}
-			;;
-		"restore")
-			pre=${pre-$pre_restore}
-			pre=${post-$post_restore}
-			;;
-		"summary")
-			echo  "No config check for listing..."
-			;;
-		"solidify")
-			echo  "No config check for solidify..."
-			;;
-		*)
-			die "Unrecognized action $action"
-			;;
-	esac
-
-	if [ -z $disable_pre ] && [ ! -z $pre ]; then
-		if [ ! -f "$pre" ]; then
-			die "Pre-backup $pre does not exists."
-		fi
-	fi
-
-	if [ -z $disable_post ] && [ ! -z $post ]; then
-		if [ ! -f "$post" ]; then
-			die "Post-backup $post does not exists."
-		fi
-	fi
-
-	name=${name-$backup_name}
-	restore_location=${restore_location-$default_restore}
-	if [ ! -d "$restore_location" ] && [ ! -z $restore ]; then
-		die "Restore location $restore_location does not exists."
-	fi
+  location=${location-$backup_location}
+  action=${action-"backup"}
+  if [ -z $location ]; then
+    die "No location provided by config file or command line."
+  fi
+  
+  if [ ! -d "$location" ]; then
+    die "Backup location $location does not exists."
+  fi
+  
+  list=${list-$backup_list}
+  if [ -z $list ]; then
+    die "No list provided by config file or command line."
+  fi
+  
+  if [ ! -f "$list" ]; then
+    die "List $list does not exists."
+  fi
+  
+  
+  case $action in
+    "backup")
+      pre=${pre-$pre_backup}
+      pre=${post-$post_backup}
+    ;;
+    "restore")
+      pre=${pre-$pre_restore}
+      pre=${post-$post_restore}
+    ;;
+    "summary")
+      echo  "No config check for listing..."
+    ;;
+    "solidify")
+      echo  "No config check for solidify..."
+    ;;
+    *)
+      die "Unrecognized action $action"
+    ;;
+  esac
+  
+  if [ -z $disable_pre ] && [ ! -z $pre ]; then
+    if [ ! -f "$pre" ]; then
+      die "Pre-backup $pre does not exists."
+    fi
+  fi
+  
+  if [ -z $disable_post ] && [ ! -z $post ]; then
+    if [ ! -f "$post" ]; then
+      die "Post-backup $post does not exists."
+    fi
+  fi
+  
+  name=${name-$backup_name}
+  restore_location=${restore_location-$default_restore}
+  if [ ! -d "$restore_location" ] && [ ! -z $restore ]; then
+    die "Restore location $restore_location does not exists."
+  fi
 }
 
 info() {
-	echo "The backup files are stored at $location"
-	echo "Using $config as configuration file"
-	echo "The backup name is $name"
-
+  echo "The backup files are stored at $location"
+  echo "Using $config as configuration file"
+  echo "The backup name is $name"
+  
 }
 
 do_backup() {
-	echo "Creating incremental backup $location$name-$backup_date.tgz"
-	finalocinc=$location$name.sngz
-	finaloczip=$location$name-$backup_date.tgz
-	if  [[ "$dry" = "true" ]]; then
-	        finaloczip=/dev/null
-		if [ -f $location$name.sngz ]; then
-			cp $location$name.sngz $location$name.sngz.dry
-		fi
-		finalocinc=$location$name.sngz.dry
-		yell "Dry run - not actually doing anything here..."
-	fi
-	tar --verbose --create --absolute-names --gzip --ignore-command-error --listed-incremental=$finalocinc --file=$finaloczip $(cat $list)
-	status=$?
-	if [[ $status -eq 0 || "$dry" = "true" ]]; then
-		if [[ -d $location$name-$backup_date.tgz || "$dry" = "true" ]]; then
-			echo "Backup $location$name-$backup_date.tgz successfully created"
-		fi
-	else
-		die "Something went wrong during the backup process"
-	fi
-	if  [[ "$dry" = "true" ]]; then
-		rm $location$name.sngz.dry
-	fi
+  echo "Creating incremental backup $location$name-$backup_date.tgz"
+  finalocinc=$location$name.sngz
+  finaloczip=$location$name-$backup_date.tgz
+  if  [[ "$dry" = "true" ]]; then
+    finaloczip=/dev/null
+    if [ -f $location$name.sngz ]; then
+      cp $location$name.sngz $location$name.sngz.dry
+    fi
+    finalocinc=$location$name.sngz.dry
+    yell "Dry run - not actually doing anything here..."
+  fi
+  tar --verbose --create --absolute-names --gzip --ignore-command-error --listed-incremental=$finalocinc --file=$finaloczip $(cat $list)
+  status=$?
+  if [[ $status -eq 0 || "$dry" = "true" ]]; then
+    if [[ -d $location$name-$backup_date.tgz || "$dry" = "true" ]]; then
+      echo "Backup $location$name-$backup_date.tgz successfully created"
+    fi
+  else
+    die "Something went wrong during the backup process"
+  fi
+  if  [[ "$dry" = "true" ]]; then
+    rm $location$name.sngz.dry
+  fi
 }
 
 do_restore() {
-	echo "The backup will be restored at $restore_location"
-	locname=$location$name
-	locnamepos=$((${#locname}+2))
-	datelen=${#date}
-	if  [[ "$dry" = "true" ]]; then
-		extract="--to-command /dev/null"
-		yell "Dry run: not extractiong anything"
-	else
-		extract="--directory $restore_location"
-	fi
-	for file in $(ls -1 $locname-*.tgz|grep -v "$name-Full"); do
-		archdate=$(expr substr $file $locnamepos $datelen)
-		if [[ $date > $archdate ]]; then
-			echo "Extracting file $file---------------------"
-			if [ -z $verbose ]; then
-	       			tar --extract --gzip --verbose --listed-incremental=/dev/null $extract --file=$file --ignore-command-error 2>/dev/null
-			else
-	       			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null $extract --file=$file --ignore-command-error
-		        fi
-		else
-			echo "File $file exluded from processing"
-		fi
-	done
-
+  echo "The backup will be restored at $restore_location"
+  locname=$location$name
+  locnamepos=$((${#locname}+2))
+  datelen=${#date}
+  if  [[ "$dry" = "true" ]]; then
+    extract="--to-command /dev/null"
+    yell "Dry run: not extractiong anything"
+  else
+    extract="--directory $restore_location"
+  fi
+  for file in $(ls -1 $locname-*.tgz|grep -v "$name-Full"); do
+    archdate=$(expr substr $file $locnamepos $datelen)
+    if [[ $date > $archdate ]]; then
+      echo "Extracting file $file---------------------"
+      if [ -z $verbose ]; then
+        tar --extract --gzip --verbose --listed-incremental=/dev/null $extract --file=$file --ignore-command-error 2>/dev/null
+      else
+        tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null $extract --file=$file --ignore-command-error
+      fi
+    else
+      echo "File $file exluded from processing"
+    fi
+  done
+  
 }
 
 solidify() {
-	echo "Solidifying..."
-	mkdir $default_tmp/$app_name
-	mkdir $default_tmp/$app_name/$name
-	if [ !-d $default_tmp/$app_name/$name ]; then
-		die "Temp folder does not exist..."
-	fi
-	if  [[ "$dry" != "true" ]]; then
-		for file in $(ls -1 $location$name-*.tgz); do
-			echo Extracting file $file---------------------
-			tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $default_tmp/$app_name/$name/ --file=$file
-		done
-		echo "Creating new file $location$name-Full-$backup_date.tgz"
-		tar --verbose --create --directory $default_tmp/$app_name/$name . --gzip --file=$location$name-Full-$backup_date.tgz
-		status=$?
-		if [ $status -gt 0 ] ;
-		then
-			die "Something went wrong during the backup process"
-		else
-			if [ -f $location$name-Full-$backup_date.tgz ]; then
-				echo "Backup $location$name-Full-$backup_date.tgz successfully created"
-			else
-				die "Something went wrong during backup $location$name-Full-$backup_date.tgz" 
-			fi
-		fi
-	else
-		yell "Dry run: those files should be processed:"
-		for file in $(ls -1 $location$name-*.tgz); do
-			echo "	$file"
-		done
-	fi
-		echo "Cleaning temp folder $default_tmp..."
-		rm -r $default_tmp/$app_name
+  echo "Solidifying..."
+  mkdir $default_tmp/$app_name
+  mkdir $default_tmp/$app_name/$name
+  if [ !-d $default_tmp/$app_name/$name ]; then
+    die "Temp folder does not exist..."
+  fi
+  if  [[ "$dry" != "true" ]]; then
+    for file in $(ls -1 $location$name-*.tgz); do
+      echo Extracting file $file---------------------
+      tar --extract --gzip --verbose --verbose --listed-incremental=/dev/null --directory $default_tmp/$app_name/$name/ --file=$file
+    done
+    echo "Creating new file $location$name-Full-$backup_date.tgz"
+    tar --verbose --create --directory $default_tmp/$app_name/$name . --gzip --file=$location$name-Full-$backup_date.tgz
+    status=$?
+    if [ $status -gt 0 ] ;
+    then
+      die "Something went wrong during the backup process"
+    else
+      if [ -f $location$name-Full-$backup_date.tgz ]; then
+        echo "Backup $location$name-Full-$backup_date.tgz successfully created"
+      else
+        die "Something went wrong during backup $location$name-Full-$backup_date.tgz"
+      fi
+    fi
+  else
+    yell "Dry run: those files should be processed:"
+    for file in $(ls -1 $location$name-*.tgz); do
+      echo "	$file"
+    done
+  fi
+  echo "Cleaning temp folder $default_tmp..."
+  rm -r $default_tmp/$app_name
 }
 
 
 list_patterns() {
-	echo "Content of backup list $list :"
-	for pattern in  $(cat $list); do
-		echo "	$pattern"
-	done
+  echo "Content of backup list $list :"
+  for pattern in  $(cat $list); do
+    echo "	$pattern"
+  done
 }
 
 list_backup() {
-	echo "List backup located at $location"
-	#tar --list --incremental --verbose --file $location$name-$backup_date.tgz #Not actually useful here
-	ls -lh $location$name*.tgz
+  echo "List backup located at $location"
+  #tar --list --incremental --verbose --file $location$name-$backup_date.tgz #Not actually useful here
+  ls -lh $location$name*.tgz
 }
 
 debug() {
-	echo "Variables from config file:"
-	echo "	backup_location: $backup_location"
-	echo "	backup_name: $backup_name"
-	echo "	backup_date: $backup_date"
-	echo "	backup_list: $backup_list"
-	echo "	default_restore: $default_restore"
-	echo "	pre_backup: $pre_backup"
-	echo "	post_backup: $post_backup"
-	echo "Other variables:"
-	echo "	location: $location"
-	echo "	list: $list"
-	echo "	pre: $pre"
-	echo "	post: $post"
-	echo "	disable_pre: $disable_pre"
-	echo "	disable_post: $disable_post"
-	echo "	name: $name"
+  echo "Variables from config file:"
+  echo "	backup_location: $backup_location"
+  echo "	backup_name: $backup_name"
+  echo "	backup_date: $backup_date"
+  echo "	backup_list: $backup_list"
+  echo "	default_restore: $default_restore"
+  echo "	pre_backup: $pre_backup"
+  echo "	post_backup: $post_backup"
+  echo "Other variables:"
+  echo "	location: $location"
+  echo "	list: $list"
+  echo "	pre: $pre"
+  echo "	post: $post"
+  echo "	disable_pre: $disable_pre"
+  echo "	disable_post: $disable_post"
+  echo "	name: $name"
 }
 
 check_dependencies() {
-	echo -n "Checking dependencies... "
-	for dep_name in tar gzip
-	do
-	  [[ $(which $dep_name 2>/dev/null) ]] || { echo -en "\n$name needs to be installed. Use 'sudo apt-get install $name'";deps=1; }
-	done
-	[[ $deps -ne 1 ]] && echo "OK" || { echo -en "\nInstall the above and rerun this script\n";exit 1; }
+  echo -n "Checking dependencies... "
+  for dep_name in tar gzip
+  do
+    [[ $(which $dep_name 2>/dev/null) ]] || { echo -en "\n$name needs to be installed. Use 'sudo apt-get install $name'";deps=1; }
+  done
+  [[ $deps -ne 1 ]] && echo "OK" || { echo -en "\nInstall the above and rerun this script\n";exit 1; }
 }
 
 pre() {
-	if [ -z disable_pre ]; then
-		$pre
-	fi
+  if [ -z disable_pre ]; then
+    $pre
+  fi
 }
 
 post() {
-	if [ -z disable_post ]; then
-		$post
-	fi
+  if [ -z disable_post ]; then
+    $post
+  fi
 }
 
 
@@ -396,35 +396,35 @@ check_dependencies
 check_args $*
 config=${config-$default_config}
 if [ ! -e $config ]; then
-	echo "Configuration file $config does not exists - hope you've set everything through command line..."
+  echo "Configuration file $config does not exists - hope you've set everything through command line..."
 else
-	source $config
+  source $config
 fi
 check_config
 #debug
 if [[ "$verbose" == "true" ]]; then
-	info
+  info
 fi
 
-case $action in 
-	"summary")
-		list_backup
-		exit 0
-		;;
-	"backup")
-		pre
-		list_patterns
-		do_backup
-		list_backup
-		post
-		;;
-	"restore")
-		pre
-		do_restore
-		post
-		;;
-	"solidify")
-		solidify
-		;;
+case $action in
+  "summary")
+    list_backup
+    exit 0
+  ;;
+  "backup")
+    pre
+    list_patterns
+    do_backup
+    list_backup
+    post
+  ;;
+  "restore")
+    pre
+    do_restore
+    post
+  ;;
+  "solidify")
+    solidify
+  ;;
 esac
 #done ?!
