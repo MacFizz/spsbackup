@@ -15,8 +15,9 @@ You can specify pre and post backup scripts if needed.
   - pre_backup.sh: script to be executed before backup (mounting remote drives, etc.)
   - post_backup.sh: script to be executed after backup (unmount remote drivesn etc.)
 
-Backup can be made mys regular users depending of what beeing backed up.
+Backup can be made by regular users depending of what beeing backed up.
 Restore would probably need to be done by root.
+Restore can be done up to a certain date contained in the backup name (not the file date).
 
 Sample configuration file and list file are working well on a standard install of pi-stomp.
 You will need to adjust parameters and create corresponding folders.
