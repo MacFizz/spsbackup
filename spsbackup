@@ -203,12 +203,14 @@ check_config() {
   
   case $action in
     "backup")
+      echo "pre: $pre"
+      echo "post: $post"
       pre=${pre-$pre_backup}
-      pre=${post-$post_backup}
+      post=${post-$post_backup}
     ;;
     "restore")
       pre=${pre-$pre_restore}
-      pre=${post-$post_restore}
+      post=${post-$post_restore}
     ;;
     "summary")
       echo  "No config check for listing..."
@@ -372,19 +374,21 @@ check_dependencies() {
   echo -n "Checking dependencies... "
   for dep_name in tar gzip
   do
-    [[ $(which $dep_name 2>/dev/null) ]] || { echo -en "\n$name needs to be installed. Use 'sudo apt-get install $name'";deps=1; }
+    [[ $(which $dep_name 2>/dev/null) ]] || { echo -en "\n$dep_name needs to be installed. Use 'sudo apt-get install $dep_name'";deps=1; }
   done
   [[ $deps -ne 1 ]] && echo "OK" || { echo -en "\nInstall the above and rerun this script\n";exit 1; }
 }
 
 pre() {
-  if [ -z disable_pre ]; then
+  if [ -z $disable_pre ]; then
+    echo "Pre script $pre" 
     $pre
   fi
 }
 
 post() {
-  if [ -z disable_post ]; then
+  if [ -z $disable_post ]; then
+    echo "Post script $post"
     $post
   fi
 }
@@ -408,10 +412,12 @@ fi
 
 case $action in
   "summary")
+    echo "Doing a summary"
     list_backup
     exit 0
   ;;
   "backup")
+    echo "Doing a backup"
     pre
     list_patterns
     do_backup
@@ -419,11 +425,13 @@ case $action in
     post
   ;;
   "restore")
+    echo "Doing a summary"
     pre
     do_restore
     post
   ;;
   "solidify")
+    echo "Doing a solidify"
     solidify
   ;;
 esac
